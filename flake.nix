@@ -62,11 +62,23 @@
             echo "packed $outDir/${uuid}.shell-extension.zip"
           '';
         };
+        # The suite loads every shipped icon through GdkPixbuf — the check that catches an
+        # SVG the shell cannot draw — and that needs both GdkPixbuf's typelib and the SVG
+        # loader librsvg provides. Neither is in gjs's own closure, and the loader is only
+        # found through a cache that has to be generated here.
+        pixbufEnv = ''
+          export GI_TYPELIB_PATH="${pkgs.gdk-pixbuf}/lib/girepository-1.0''${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+          export GDK_PIXBUF_MODULEDIR="${pkgs.librsvg}/lib/gdk-pixbuf-2.0/2.10.0/loaders"
+          gdk-pixbuf-query-loaders > "$PWD/loaders.cache"
+          export GDK_PIXBUF_MODULE_FILE="$PWD/loaders.cache"
+        '';
       in {
         # `nix develop` — everything needed to work on this extension.
         devShells.default = pkgs.mkShell {
           packages = [
             pkgs.gjs # runs the headless test suite
+            pkgs.gdk-pixbuf # the icon-loading test
+            pkgs.librsvg # ... and the SVG loader it needs
             pkgs.glib.dev # glib-compile-schemas
             pkgs.eslint
             pkgs.zip
@@ -91,11 +103,12 @@
           unit-tests = pkgs.runCommand "recap-gs-unit-tests"
             {
               src = self;
-              nativeBuildInputs = [ pkgs.gjs ];
+              nativeBuildInputs = [ pkgs.gjs pkgs.gdk-pixbuf pkgs.librsvg ];
             } ''
             cp -r "$src" ./source
             chmod -R u+w ./source
             cd ./source
+            ${pixbufEnv}
             gjs -m tests/run.js | tee "$out"
           '';
 

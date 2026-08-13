@@ -5,6 +5,9 @@
 const gjsGlobals = {
     // GJS runtime
     imports: 'readonly',
+    // GNOME Shell's own: only defined inside the compositor process, which is why nothing
+    // under src/lib may touch it.
+    global: 'readonly',
     print: 'readonly',
     printerr: 'readonly',
     log: 'readonly',
