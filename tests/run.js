@@ -22,6 +22,7 @@ import './preferences.test.js';
 import './resume.test.js';
 import './attention.test.js';
 import './events.test.js';
+import './eventService.test.js';
 
 import { run } from './harness.js';
 

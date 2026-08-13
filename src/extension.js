@@ -25,6 +25,9 @@ import { Scheduler } from './lib/scheduler.js';
 import { buildMenu } from './lib/menu.js';
 import { NEUTRAL_ICON } from './lib/contract.js';
 import { buildResumeLaunch } from './lib/resume.js';
+import { Attention } from './lib/attention.js';
+import { decodeEvent } from './lib/events.js';
+import { EventService } from './lib/eventService.js';
 
 /**
  * A vertical box, spelled the way this shell spells it. St.BoxLayout gained `orientation`
@@ -70,6 +73,14 @@ class RecapIndicator extends PanelMenu.Button {
         this.add_child(box);
 
         this._source = new RecapSource({});
+
+        // What the agents tell us, and what it adds up to. recap still decides every
+        // status; attention only decides what is worth your eye right now.
+        this._attention = new Attention({});
+        this._eventService = new EventService({
+            onEvent: (kind, payload) => this._onAgentEvent(kind, payload),
+        });
+        this._eventService.start();
         this._scheduler = new Scheduler({
             intervalSeconds: this._settings.get_int('refresh-interval'),
             onTick: () => this._refresh(),
@@ -143,12 +154,37 @@ class RecapIndicator extends PanelMenu.Button {
         });
     }
 
+    /**
+     * An agent said something. Decode it, flag the project it names, and redraw.
+     *
+     * Nothing here blocks: the bus method has already returned by the time this runs, so a
+     * hook is never waiting on the compositor.
+     */
+    _onAgentEvent(kind, payload) {
+        const decoded = decodeEvent(kind, payload);
+        if (!decoded.ok) {
+            console.debug(`recap: ignoring an event (${decoded.reason})`);
+            return;
+        }
+
+        const rows = this._rows();
+        this._attention.record(decoded.event, rows);
+        this._render();
+    }
+
+    /** The rows as they stand, for matching an event against. */
+    _rows() {
+        return buildMenu(this._source.state, this._settingsSnapshot()).rows;
+    }
+
     async _refresh() {
         await this._source.refresh(this._settingsSnapshot());
         // The source resolves after a cancelled run too, and destroy() cancels: by then
         // this indicator may be gone.
         if (this._destroyed)
             return;
+        // A question recap now reports as answered stops being a question.
+        this._attention.reconcile(this._rows());
         this._render();
     }
 
@@ -280,6 +316,8 @@ class RecapIndicator extends PanelMenu.Button {
 
         this._scheduler.stop();
         this._source.destroy();
+        this._eventService.stop();
+        this._attention.clear();
 
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);

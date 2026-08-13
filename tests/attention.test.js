@@ -1,4 +1,4 @@
-import { suite, test, assert, assertEqual, assertDeepEqual } from './harness.js';
+import { suite, test, assert, assertEqual } from './harness.js';
 import { fixtureText } from './util.js';
 import { decodeDocument } from '../src/lib/document.js';
 import { buildRows } from '../src/lib/rows.js';

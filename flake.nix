@@ -79,6 +79,7 @@
             pkgs.gjs # runs the headless test suite
             pkgs.gdk-pixbuf # the icon-loading test
             pkgs.librsvg # ... and the SVG loader it needs
+            pkgs.dbus # dbus-run-session, for the event interface tests
             pkgs.glib.dev # glib-compile-schemas
             pkgs.eslint
             pkgs.zip
@@ -89,7 +90,7 @@
 
           shellHook = ''
             echo "recap-gs dev shell"
-            echo "  gjs -m tests/run.js   headless suite against the working tree"
+            echo "  dbus-run-session -- gjs -m tests/run.js   headless suite"
             echo "  eslint .              lint (same version nix flake check runs)"
             echo "  nix flake check       lint + suite + schema + pack, against git HEAD"
             echo "  nix build             packed .shell-extension.zip"
@@ -103,13 +104,19 @@
           unit-tests = pkgs.runCommand "recap-gs-unit-tests"
             {
               src = self;
-              nativeBuildInputs = [ pkgs.gjs pkgs.gdk-pixbuf pkgs.librsvg ];
+              nativeBuildInputs = [ pkgs.gjs pkgs.gdk-pixbuf pkgs.librsvg pkgs.dbus ];
             } ''
             cp -r "$src" ./source
             chmod -R u+w ./source
             cd ./source
             ${pixbufEnv}
-            gjs -m tests/run.js | tee "$out"
+            # Under a session bus of its own: the event interface is tested by calling it
+            # over a real bus, because no stand-in can vouch for a name being owned, a call
+            # arriving, or the name going away again on disable.
+            # --config-file because a build sandbox has no /etc/dbus-1, which is where
+            # dbus-run-session looks for the session configuration by default.
+            dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf \
+              -- gjs -m tests/run.js | tee "$out"
           '';
 
           lint = pkgs.runCommand "recap-gs-lint"
@@ -180,10 +187,11 @@
           meta.description = "Run the headless suite against the working tree";
           program = "${pkgs.writeShellApplication {
             name = "recap-gs-tests";
-            runtimeInputs = [ pkgs.gjs ];
+            runtimeInputs = [ pkgs.gjs pkgs.gdk-pixbuf pkgs.librsvg pkgs.dbus ];
             text = ''
               cd "''${1:-.}"
-              exec gjs -m tests/run.js
+              ${pixbufEnv}
+              exec dbus-run-session -- gjs -m tests/run.js
             '';
           }}/bin/recap-gs-tests";
         };

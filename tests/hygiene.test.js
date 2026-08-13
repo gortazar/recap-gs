@@ -77,11 +77,15 @@ suite('code hygiene', () => {
         }
     });
 
-    test('the extension destroys its source and stops its schedule on the way out', () => {
+    test('the extension gives back everything it took on the way out', () => {
         const teardown = readFile('src', 'extension.js');
         const onDestroy = teardown.slice(teardown.indexOf('_onDestroy()'));
         assert(onDestroy.includes('this._scheduler.stop()'), 'the schedule is never stopped');
         assert(onDestroy.includes('this._source.destroy()'), 'the source is never destroyed');
+        // The bus name is the one an agent's hook talks to: left owned by a disabled
+        // extension, every hook call after that goes nowhere and says nothing.
+        assert(onDestroy.includes('this._eventService.stop()'), 'the bus name is never released');
+        assert(onDestroy.includes('this._attention.clear()'), 'the flags outlive the indicator');
     });
 
     test('the packed stylesheet only styles this extension\'s own classes', () => {
