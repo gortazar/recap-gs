@@ -23,6 +23,71 @@ session was asked and where it got to. **Click a row and the session resumes** �
 opens in the directory that session was running in, and `claude --resume` (or
 `opencode --session`) picks it up where it stopped.
 
+## Notifications: the moment it happens
+
+Polling every 30 seconds means you learn that a session is waiting for you up to 30 seconds
+late. Your agents can tell the panel instead, the moment it happens:
+
+```sh
+~/.local/share/gnome-shell/extensions/recap@recap-gs.patxi/hooks/install-hooks.sh
+```
+
+It shows you exactly what it will change and asks before changing it, backs up your
+settings first, merges rather than overwrites, leaves hooks you wrote yourself alone, and
+can be undone with `--uninstall`. The same command is on the **Detection** page of the
+preferences window, with a button that copies it.
+
+What it wires up:
+
+| Agent | Event | What the panel does |
+|---|---|---|
+| Claude Code | `Notification` — waiting for you, or for permission | marks the project **asking** |
+| Claude Code | `Stop` — finished answering | marks the project **finished** |
+| opencode | `session.idle` — finished working | marks the project **finished** |
+
+opencode has no equivalent of Claude Code's `Notification`, so it gets *finished* only and
+stays on the poll for *asking*. That is documented rather than faked: inventing an "asking"
+from an idle event would put a question mark on a session that never asked anything.
+
+![the panel with a project asking for you](screenshots/panel-flagged.png)
+
+The flagged project moves to the top of the menu, marked, with the agent's own words under
+recap's sentence:
+
+![the menu with a flagged project](screenshots/menu-flagged.png)
+
+It stops asking when you look: opening the menu clears the marks it showed you (when you
+close it, so they last long enough to read), clicking a row clears that row, and a session
+recap reports as no longer waiting clears itself at the next refresh. Nothing clears on a
+timer — a question asked while you were away from the machine is still a question when you
+get back.
+
+**Restart your agents after installing the hooks.** A session that was already running does
+not pick them up.
+
+### The other two sources
+
+Both are off by default and live on the **Detection** page:
+
+- **Desktop notifications** — for agents that already `notify-send`. Configurable by
+  application name.
+- **A terminal asking for attention** — a bell. Off by default because *any* bell from *any*
+  terminal raises it, and a signal that lies is worse than one that is late.
+
+Neither can say which project it is about, so both mark the panel rather than a row.
+
+### Under the hood
+
+`recap-gs-notify asking` reads the agent's hook JSON on stdin and makes one D-Bus call. It
+always exits 0, it is bounded by a timeout, and it does nothing at all when the extension is
+not running — a hook that can fail the agent it is attached to is this feature's bug, not the
+agent's. The interface it calls is specified in
+[`docs/event-interface.md`](docs/event-interface.md) and treated as public: a shim installed
+months ago keeps working.
+
+To turn it all off: `hooks/install-hooks.sh --uninstall`, or just switch the sources off in
+preferences.
+
 ## What it shows
 
 The vocabulary is recap's, and this extension decides none of it: it reads `recap --json`
@@ -63,8 +128,10 @@ which terminal to open when you click a row.
   or hung recap leaves the last report on screen, labelled with its age.
 - **It does not poll behind your back.** Refreshes stop while the screen is locked or the
   session has been idle for five minutes, and resume the moment you come back.
-- **It does not notify.** It is a readout you look at, not a thing that interrupts you. (See
-  the open question about this in the idea's plan.)
+- **It does not interrupt you.** No desktop notifications of its own, no dialogs, no sound.
+  When something asks for you the panel changes and pulses three times — bounded, because an
+  indicator that moves until acknowledged is an accessibility problem as much as an
+  irritation — and then waits.
 - **It never writes to an agent's state.** The only thing it starts is the terminal you asked
   for by clicking a row.
 
@@ -78,16 +145,21 @@ which terminal to open when you click a row.
 ## Development
 
 ```sh
-nix develop            # gjs, eslint, glib, the packer
-gjs -m tests/run.js    # the headless suite: 147 tests, no compositor needed
-nix flake check        # lint + that suite + a --strict schema compile + the upload zip
-nix build              # the packed .shell-extension.zip
+nix develop                              # gjs, eslint, glib, dbus, the packer
+dbus-run-session -- gjs -m tests/run.js  # the headless suite: 237 tests, no compositor
+nix flake check                          # lint + that suite + a schema compile + the zip
+nix build                                # the packed .shell-extension.zip
 ```
+
+The suite needs a session bus because the event interface is tested by calling it over a real
+one — a name being owned, a call arriving, the name going away again on disable are not
+things a stand-in can vouch for.
 
 Everything with a decision in it lives in [`src/lib/`](src/lib), which imports only GLib and
 Gio — no `St`, no `resource:///org/gnome/shell`. That is what makes the suite above possible:
 decoding, the status vocabulary, the row model, the panel summary, error classification, the
-refresh schedule and the resume command lines are all tested under plain `gjs`.
+refresh schedule, the resume command lines and the whole attention model are all tested under
+plain `gjs`.
 [`src/extension.js`](src/extension.js) is creation and destruction and nothing else.
 
 Two things the suite cannot ask, so a script does instead:
