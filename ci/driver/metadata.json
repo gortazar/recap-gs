@@ -1,0 +1,7 @@
+{
+  "uuid": "recap-driver@test.recap-gs",
+  "name": "recap smoke-test driver",
+  "description": "Test-only. Drives the recap extension inside a throwaway headless shell: enables it, waits for a report, screenshots the panel and the open menu, then enables and disables it repeatedly and checks that nothing is left behind. Never packed, never published.",
+  "shell-version": ["46", "47", "48", "49", "50"],
+  "url": "https://github.com/gortazar/aideas"
+}

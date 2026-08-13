@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<!-- Shipped rather than taken from the icon theme: five distinguishable status icons are
+     not guaranteed to exist in every theme, and a missing one is a blank panel. Filled
+     shapes only, no strokes: GTK recolours symbolic icons by forcing a fill. -->
+  <!-- the neutral indicator: a terminal prompt, used when there is nothing to report -->
+  <path d="M1.5 2.5h13v11h-13zm2 2v7h9v-7zm1.2 1.1L7.6 8l-2.9 2.4-.8-1L6 8 3.9 6.6zM8.4 9.8h3.2v1.1H8.4z" fill="#2e3436" fill-rule="evenodd"/>
+</svg>

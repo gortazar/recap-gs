@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<!-- Shipped rather than taken from the icon theme: five distinguishable status icons are
+     not guaranteed to exist in every theme, and a missing one is a blank panel. Filled
+     shapes only, no strokes: GTK recolours symbolic icons by forcing a fill. -->
+  <!-- a cross: stopped mid-work -->
+  <path d="M4.3 2.9 2.9 4.3 6.6 8l-3.7 3.7 1.4 1.4L8 9.4l3.7 3.7 1.4-1.4L9.4 8l3.7-3.7-1.4-1.4L8 6.6z" fill="#2e3436"/>
+</svg>

@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "generated_at": "2026-08-10T13:44:01.377850288+02:00",
+  "liveness": "unavailable",
+  "projects": [
+    {
+      "name": "-home-demo-projects-half-written-notes",
+      "dir": "",
+      "status": "unclear",
+      "icon": "❓",
+      "recap": "Unreadable transcript: no recognisable records.",
+      "agents": [
+        "Claude Code"
+      ],
+      "last_activity": "2026-08-10T13:44:01.070914641+02:00",
+      "sessions": [
+        {
+          "id": "ffff6666",
+          "agent": "Claude Code",
+          "status": "unclear",
+          "icon": "❓",
+          "recap": "Unreadable transcript: no recognisable records.",
+          "started": "0001-01-01T00:00:00Z",
+          "last_activity": "2026-08-10T13:44:01.070914641+02:00",
+          "source": "/home/demo/.claude/projects/-home-demo-projects-half-written-notes/ffff6666.jsonl",
+          "unreadable": "no recognisable records"
+        }
+      ]
+    },
+    {
+      "name": "orchestrator",
+      "dir": "/home/demo/projects/orchestrator",
+      "status": "unclear",
+      "icon": "❓",
+      "recap": "Asked to \"Run the whole benchmark suite and report the regressions\" — working, last used Bash.",
+      "agents": [
+        "Claude Code"
+      ],
+      "last_activity": "2026-08-10T11:43:56Z",
+      "sessions": [
+        {
+          "id": "aaaa1111",
+          "agent": "Claude Code",
+          "status": "unclear",
+          "icon": "❓",
+          "recap": "Asked to \"Run the whole benchmark suite and report the regressions\" — working, last used Bash.",
+          "dir": "/home/demo/projects/orchestrator",
+          "branch": "main",
+          "model": "claude-opus-5",
+          "agent_version": "2.1.226",
+          "started": "2026-08-10T11:29:01Z",
+          "last_activity": "2026-08-10T11:43:56Z",
+          "last_tool": "Bash",
+          "source": "/home/demo/.claude/projects/-home-demo-projects-orchestrator/aaaa1111.jsonl"
+        }
+      ]
+    },
+    {
+      "name": "blog-pipeline",
+      "dir": "/home/demo/projects/blog-pipeline",
+      "status": "unclear",
+      "icon": "❓",
+      "recap": "Asked to \"Work out why first-user source is coming back as direct\" — answered, waiting for you.",
+      "agents": [
+        "Claude Code"
+      ],
+      "last_activity": "2026-08-10T11:24:01Z",
+      "sessions": [
+        {
+          "id": "bbbb2222",
+          "agent": "Claude Code",
+          "status": "unclear",
+          "icon": "❓",
+          "recap": "Asked to \"Work out why first-user source is coming back as direct\" — answered, waiting for you.",
+          "dir": "/home/demo/projects/blog-pipeline",
+          "branch": "main",
+          "model": "claude-opus-5",
+          "agent_version": "2.1.226",
+          "started": "2026-08-10T10:14:01Z",
+          "last_activity": "2026-08-10T11:24:01Z",
+          "source": "/home/demo/.claude/projects/-home-demo-projects-blog-pipeline/bbbb2222.jsonl"
+        }
+      ]
+    },
+    {
+      "name": "ansible-ascent",
+      "dir": "/home/demo/projects/ansible-ascent",
+      "status": "interrupted",
+      "icon": "🔴",
+      "recap": "Asked to \"Start the container on the remote host over tailscale\" — interrupted mid-Bash.",
+      "agents": [
+        "Claude Code"
+      ],
+      "last_activity": "2026-08-10T00:54:01Z",
+      "sessions": [
+        {
+          "id": "cccc3333",
+          "agent": "Claude Code",
+          "status": "interrupted",
+          "icon": "🔴",
+          "recap": "Asked to \"Start the container on the remote host over tailscale\" — interrupted mid-Bash.",
+          "dir": "/home/demo/projects/ansible-ascent",
+          "branch": "main",
+          "model": "claude-opus-5",
+          "agent_version": "2.1.226",
+          "started": "2026-08-10T00:37:21Z",
+          "last_activity": "2026-08-10T00:54:01Z",
+          "last_tool": "Bash",
+          "source": "/home/demo/.claude/projects/-home-demo-projects-ansible-ascent/cccc3333.jsonl"
+        }
+      ]
+    },
+    {
+      "name": "gnome-tasks",
+      "dir": "/home/demo/projects/gnome-tasks",
+      "status": "interrupted",
+      "icon": "🔴",
+      "recap": "Asked to \"Rework the preferences window to use libadwaita\" — you interrupted it.",
+      "agents": [
+        "Claude Code"
+      ],
+      "last_activity": "2026-08-09T11:17:21Z",
+      "sessions": [
+        {
+          "id": "dddd4444",
+          "agent": "Claude Code",
+          "status": "interrupted",
+          "icon": "🔴",
+          "recap": "Asked to \"Rework the preferences window to use libadwaita\" — you interrupted it.",
+          "dir": "/home/demo/projects/gnome-tasks",
+          "branch": "agent/gnome-tasks",
+          "model": "claude-opus-5",
+          "agent_version": "2.1.226",
+          "started": "2026-08-09T10:44:01Z",
+          "last_activity": "2026-08-09T11:17:21Z",
+          "source": "/home/demo/.claude/projects/-home-demo-projects-gnome-tasks/dddd4444.jsonl"
+        }
+      ]
+    },
+    {
+      "name": "vacations",
+      "dir": "/home/demo/projects/vacations",
+      "status": "idle",
+      "icon": "⚪",
+      "recap": "Asked to \"Write the accrual rules down as a markdown table\" — done for now, nothing running.",
+      "agents": [
+        "Claude Code"
+      ],
+      "last_activity": "2026-08-09T02:40:41Z",
+      "sessions": [
+        {
+          "id": "eeee5555",
+          "agent": "Claude Code",
+          "status": "idle",
+          "icon": "⚪",
+          "recap": "Asked to \"Write the accrual rules down as a markdown table\" — done for now, nothing running.",
+          "dir": "/home/demo/projects/vacations",
+          "branch": "main",
+          "model": "claude-opus-5",
+          "agent_version": "2.1.226",
+          "started": "2026-08-09T02:24:01Z",
+          "last_activity": "2026-08-09T02:40:41Z",
+          "source": "/home/demo/.claude/projects/-home-demo-projects-vacations/eeee5555.jsonl"
+        }
+      ]
+    }
+  ]
+}

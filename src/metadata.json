@@ -1,0 +1,9 @@
+{
+  "uuid": "recap@recap-gs.patxi",
+  "name": "Recap",
+  "description": "Shows what your coding agents are doing — how many sessions are running and which are waiting for you — in the top bar. Reads its data from the recap command line tool; harmless, and says so, when recap is not installed.",
+  "shell-version": ["46", "47", "48", "49", "50"],
+  "url": "https://github.com/gortazar/aideas",
+  "settings-schema": "org.gnome.shell.extensions.recap",
+  "gettext-domain": "recap"
+}

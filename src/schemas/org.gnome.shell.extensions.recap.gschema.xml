@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.recap" path="/org/gnome/shell/extensions/recap/">
+
+    <key name="refresh-interval" type="i">
+      <default>30</default>
+      <range min="5" max="3600"/>
+      <summary>Seconds between refreshes</summary>
+      <description>
+        How often recap is run while the menu is closed. The menu also refreshes the moment
+        it is opened, and nothing is refreshed while the screen is locked.
+      </description>
+    </key>
+
+    <key name="recap-path" type="s">
+      <default>'recap'</default>
+      <summary>Path to the recap binary</summary>
+      <description>
+        A bare name is looked up on PATH; an absolute path is used as given.
+      </description>
+    </key>
+
+    <key name="since" type="s">
+      <default>''</default>
+      <summary>Only sessions touched within this window</summary>
+      <description>
+        Passed to recap as --since (for example 24h, 90m, 2d). Empty leaves recap's own
+        default in place.
+      </description>
+    </key>
+
+    <key name="agent" type="s">
+      <default>'all'</default>
+      <choices>
+        <choice value="all"/>
+        <choice value="claude"/>
+        <choice value="opencode"/>
+      </choices>
+      <summary>Which agent's sessions to show</summary>
+    </key>
+
+    <key name="project-roots" type="as">
+      <default>[]</default>
+      <summary>Only projects under these directories</summary>
+      <description>
+        Each entry is passed to recap as --root. Empty leaves recap's own default (your
+        home directory) in place.
+      </description>
+    </key>
+
+    <key name="show-count" type="b">
+      <default>true</default>
+      <summary>Show the session count next to the panel icon</summary>
+    </key>
+
+    <key name="hide-finished" type="b">
+      <default>false</default>
+      <summary>Hide finished sessions from the menu</summary>
+    </key>
+
+    <key name="hide-idle" type="b">
+      <default>false</default>
+      <summary>Hide idle sessions from the menu</summary>
+    </key>
+
+    <key name="terminal" type="s">
+      <default>''</default>
+      <summary>Terminal used to resume a session</summary>
+      <description>
+        The terminal emulator launched when a row is clicked. Empty picks the first one
+        found on PATH.
+      </description>
+    </key>
+
+  </schema>
+</schemalist>

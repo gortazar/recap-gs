@@ -1,0 +1,32 @@
+/* Deliberately small. Everything here is spacing and emphasis: colours, fonts and the icon
+   tint come from the user's theme, which is why the status icons are symbolic. */
+
+.recap-row {
+    spacing: 8px;
+}
+
+/* The menu is a list of sentences, so it needs a width to wrap inside. Without one, a long
+   recap line stretches the popup across the screen. */
+.recap-row-text,
+.recap-note {
+    max-width: 32em;
+    spacing: 2px;
+}
+
+.recap-row-name {
+    font-weight: bold;
+}
+
+.recap-row-aside,
+.recap-note-detail {
+    font-size: 0.9em;
+    opacity: 0.7;
+}
+
+.recap-row-sentence {
+    font-size: 0.95em;
+}
+
+.recap-note-title {
+    font-weight: bold;
+}
