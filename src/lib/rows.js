@@ -50,6 +50,10 @@ export function buildRows(document, options = {}) {
             iconName: info.iconName,
             emoji: info.emoji,
             recap: stringOr(project.recap, ''),
+            // Every directory this project is known by: the project root and each session's
+            // own working directory, which for a worktree or a subdirectory-started agent is
+            // not the root. lib/attention.js matches an event's cwd against these.
+            dirs: directoriesOf(project, sessions),
             agentLabel: agentLabel(project.agents),
             sessionCount: sessions.length,
             ageLabel: ageLabel(project.last_activity, now),
@@ -94,6 +98,13 @@ function resumeTarget(project, sessions) {
         dir,
         status: statusInfo(best.status).word,
     };
+}
+
+function directoriesOf(project, sessions) {
+    const dirs = [stringOr(project.dir, '')];
+    for (const session of sessions)
+        dirs.push(stringOr(session?.dir, ''));
+    return [...new Set(dirs.filter(dir => dir !== ''))];
 }
 
 function agentLabel(agents) {

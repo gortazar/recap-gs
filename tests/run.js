@@ -20,6 +20,7 @@ import './scheduler.test.js';
 import './hygiene.test.js';
 import './preferences.test.js';
 import './resume.test.js';
+import './attention.test.js';
 
 import { run } from './harness.js';
 
