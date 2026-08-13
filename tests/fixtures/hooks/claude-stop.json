@@ -1,0 +1,7 @@
+{
+  "session_id": "aaaa1111",
+  "transcript_path": "/home/demo/.claude/projects/-home-demo-projects-orchestrator/aaaa1111.jsonl",
+  "cwd": "/home/demo/projects/orchestrator",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false
+}

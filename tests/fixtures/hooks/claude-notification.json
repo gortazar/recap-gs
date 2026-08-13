@@ -1,0 +1,7 @@
+{
+  "session_id": "bbbb2222",
+  "transcript_path": "/home/demo/.claude/projects/-home-demo-projects-blog-pipeline/bbbb2222.jsonl",
+  "cwd": "/home/demo/projects/blog-pipeline",
+  "hook_event_name": "Notification",
+  "message": "Claude needs your permission to use Bash"
+}
