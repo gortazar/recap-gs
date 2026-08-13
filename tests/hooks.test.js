@@ -49,9 +49,10 @@ function tempHome() {
             HOME: home,
             XDG_CONFIG_HOME: `${home}/.config`,
             RECAP_GS_BIN_DIR: `${home}/bin`,
-            // The installer must not find a recap-gs-notify already on PATH, or it will
-            // report the one belonging to whoever is running the suite.
-            PATH: '/usr/bin:/bin',
+            // PATH is inherited rather than pinned: a build sandbox has neither /usr/bin
+            // nor /bin, and pinning it took python3 and cp away from the installer. What
+            // the installer does about a shim that is already on PATH is asserted on its
+            // own output instead, since that depends on the machine running the suite.
         }),
         read(...parts) {
             const path = GLib.build_filenamev([home, ...parts]);
@@ -176,7 +177,8 @@ suite('the hook installer', () => {
 
         assert(home.exists('.config', 'opencode', 'plugin', 'recap-gs.js'),
             'the opencode plugin was not installed');
-        assert(home.exists('bin', 'recap-gs-notify'), 'the shim was not installed');
+        assert(home.exists('bin', 'recap-gs-notify') || result.stdout.includes('already on PATH'),
+            `the shim was neither installed nor found: ${result.stdout}`);
     });
 
     test('running it twice leaves one entry, not two', async () => {

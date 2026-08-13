@@ -89,6 +89,7 @@
             pkgs.gdk-pixbuf # the icon-loading test
             pkgs.librsvg # ... and the SVG loader it needs
             pkgs.dbus # dbus-run-session, for the event interface tests
+            pkgs.python3 # hooks/install-hooks.sh edits settings.json with it
             pkgs.glib.dev # glib-compile-schemas
             pkgs.eslint
             pkgs.zip
@@ -113,7 +114,12 @@
           unit-tests = pkgs.runCommand "recap-gs-unit-tests"
             {
               src = self;
-              nativeBuildInputs = [ pkgs.gjs pkgs.gdk-pixbuf pkgs.librsvg pkgs.dbus ];
+              nativeBuildInputs = [
+                pkgs.gjs pkgs.gdk-pixbuf pkgs.librsvg pkgs.dbus
+                # The hook installer is a bash script that edits JSON with python3, and the
+                # suite runs it for real against a throwaway HOME.
+                pkgs.bash pkgs.python3 pkgs.coreutils
+              ];
             } ''
             cp -r "$src" ./source
             chmod -R u+w ./source
