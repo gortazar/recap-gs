@@ -185,8 +185,13 @@ class RecapIndicator extends PanelMenu.Button {
         this._render();
         // Coalesced and rate-limited events still update the flag, but they do not get to
         // flash the panel again: that is the whole point of the ceiling.
-        if (result.accepted)
-            this._pulse();
+        if (!result.accepted)
+            return;
+        this._pulse();
+        // Ask recap what it makes of this, so the flagged row's words are current. Through
+        // the same single-flight refresher as everything else — two refreshes never overlap
+        // — and it spawns nothing while the screen is locked or the session is idle.
+        this._scheduler.nudge();
     }
 
     /** Opening the menu is acknowledgement: what it showed you has been seen. */

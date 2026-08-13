@@ -137,6 +137,36 @@ suite('refresh schedule', () => {
         assertEqual(timers.pending, 0, 'waking must not start a schedule of its own');
     });
 
+    test('a nudge refreshes now and starts the interval over', () => {
+        // What an agent event does: the row it flagged should carry recap's current answer,
+        // not one from half a minute ago.
+        const { scheduler, timers, ticks } = makeScheduler();
+        scheduler.start();
+        assertEqual(ticks.length, 1);
+        scheduler.nudge();
+        assertEqual(ticks.length, 2);
+        assertEqual(timers.pending, 1);
+        assertEqual(timers.seconds, 30);
+        scheduler.stop();
+    });
+
+    test('a nudge while suppressed spawns nothing at all', () => {
+        // The flag is raised either way — that costs nothing — but a locked or idle machine
+        // does not start a process because an agent said something.
+        const { scheduler, ticks } = makeScheduler({ isSuppressed: () => true });
+        scheduler.start();
+        scheduler.nudge();
+        assertEqual(ticks.length, 0);
+        scheduler.stop();
+    });
+
+    test('a nudge before anything is running still refreshes', () => {
+        const { scheduler, timers, ticks } = makeScheduler();
+        scheduler.nudge();
+        assertEqual(ticks.length, 1);
+        assertEqual(timers.pending, 0, 'a nudge must not start a schedule of its own');
+    });
+
     test('waking while suppressed refreshes anyway', () => {
         // If something asked for this — an opened menu — there is somebody looking at it.
         const { scheduler, ticks } = makeScheduler({ isSuppressed: () => true });

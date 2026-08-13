@@ -72,6 +72,25 @@ export class Scheduler {
         }
     }
 
+    /**
+     * Something happened that this schedule did not know about — an agent event — so refresh
+     * now, unless refreshing is suppressed.
+     *
+     * The difference from wake(): wake() is somebody looking at the menu, so it refreshes
+     * whatever the state of the machine. A nudge comes from a process, and a locked or idle
+     * machine should not start spawning because an agent finished a turn. The flag is raised
+     * either way; only the subprocess waits.
+     */
+    nudge() {
+        if (this._isSuppressed())
+            return;
+        this._onTick();
+        if (this._running) {
+            this._clear();
+            this._schedule();
+        }
+    }
+
     _tick() {
         if (!this._isSuppressed())
             this._onTick();
