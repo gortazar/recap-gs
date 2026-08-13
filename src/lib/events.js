@@ -102,7 +102,8 @@ function agentOf(parsed) {
  */
 function cleanMessage(value) {
     const message = text(value)
-        // eslint-disable-next-line no-control-regex
+        // Control characters, spelled by code point so nothing invisible ends up in this
+        // file either.
         .replace(/[\u0000-\u001f\u007f]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();

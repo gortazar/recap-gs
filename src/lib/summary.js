@@ -10,6 +10,7 @@
 // extension inventing a number recap did not report.
 
 import { NEUTRAL_ICON, STATUS_WORDS, statusInfo, moreUrgent } from './contract.js';
+import { KIND } from './attention.js';
 
 /**
  * Summarise the rows for the panel button.
@@ -25,6 +26,7 @@ export function summarise(rows, options = {}) {
             iconName: NEUTRAL_ICON,
             label: '',
             tooltip: 'No agent sessions',
+            styleClass: '',
         };
     }
 
@@ -47,6 +49,8 @@ export function summarise(rows, options = {}) {
         iconName: statusInfo(worst).iconName,
         label: showCount ? String(counts.get(worst)) : '',
         tooltip: parts.join(', '),
+        // No emphasis: this is the readout, not the news.
+        styleClass: '',
     };
 }
 
@@ -56,5 +60,35 @@ export function summariseProblem(problem) {
         iconName: NEUTRAL_ICON,
         label: '',
         tooltip: problem?.title ?? 'recap is unavailable',
+        styleClass: '',
+    };
+}
+
+
+/**
+ * The panel while something is asking for you.
+ *
+ * Returns null when nothing is pending, which is what lets the caller fall through to the
+ * polled summary with a `??`.
+ *
+ * The icon is the status icon that means the same thing — the exclamation mark for asking,
+ * the tick for finished — so the panel's vocabulary does not double. What is new is the
+ * style class, which is how the button is coloured and pulsed, and the fact that this
+ * outranks whatever the last poll said.
+ */
+export function summariseAttention(attention) {
+    const pending = attention?.summary?.() ?? null;
+    if (pending === null)
+        return null;
+
+    const asking = pending.kind === KIND.ASKING;
+    const projects = pending.count === 1 ? 'project' : 'projects';
+    return {
+        iconName: asking ? 'recap-waiting-symbolic' : 'recap-finished-symbolic',
+        label: String(pending.count),
+        tooltip: asking
+            ? `${pending.count} ${projects} asked for you`
+            : `${pending.count} ${projects} finished`,
+        styleClass: asking ? 'recap-asking' : 'recap-finished',
     };
 }

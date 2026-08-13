@@ -19,7 +19,9 @@ import { statusInfo } from './contract.js';
  * same projects the same way round.
  */
 export function buildRows(document, options = {}) {
-    const { hideFinished = false, hideIdle = false, now = Date.now() } = options;
+    const {
+        hideFinished = false, hideIdle = false, now = Date.now(), keep = () => false,
+    } = options;
     const projects = Array.isArray(document?.projects) ? document.projects : [];
 
     const rows = [];
@@ -30,19 +32,22 @@ export function buildRows(document, options = {}) {
             continue;
 
         const info = statusInfo(project.status);
-        if (hideFinished && info.word === 'finished')
-            continue;
-        if (hideIdle && info.word === 'idle')
-            continue;
-
         const sessions = Array.isArray(project.sessions) ? project.sessions : [];
         const dir = stringOr(project.dir, '');
         const name = stringOr(project.name, '') || dir || '(unnamed project)';
+        const key = dir || name;
+
+        // `keep` is how a project that just asked you something survives a filter meant for
+        // quiet ones: hiding idle projects must not hide the one waiting on an answer.
+        const hidden = (hideFinished && info.word === 'finished') ||
+            (hideIdle && info.word === 'idle');
+        if (hidden && !keep(key))
+            continue;
 
         rows.push({
             // Stable enough to match a row across refreshes: the directory if there is one,
             // the name otherwise.
-            key: dir || name,
+            key,
             name,
             dir,
             statusWord: info.word,

@@ -30,3 +30,38 @@
 .recap-note-title {
     font-weight: bold;
 }
+
+
+/* 0.2: attention.
+ *
+ * Drawn from the theme's accent colour where there is one — GNOME 47 and later expose
+ * -st-accent-color — with a plain fallback for themes that do not, because a colour nobody
+ * defined resolves to nothing and an invisible warning is worse than a plain one. The
+ * declarations are ordered so the fallback is overwritten only when the accent exists.
+ */
+
+.recap-asking {
+    color: #e5a50a;
+    color: -st-accent-color;
+}
+
+.recap-finished {
+    color: #2ec27e;
+}
+
+/* The unread mark on a flagged row: a leading dot, the way every other list draws one. */
+.recap-row-mark {
+    padding-right: 4px;
+    font-weight: bold;
+}
+
+.recap-row-flagged {
+    font-weight: bold;
+}
+
+/* What the agent itself said, under recap's own sentence. Quieter than the sentence: it is
+   extra detail, not the headline. */
+.recap-row-message {
+    font-size: 0.9em;
+    padding-top: 2px;
+}

@@ -45,6 +45,14 @@ function verticalBox(props = {}) {
 /** How long the session must be idle before refreshing stops. */
 const IDLE_SECONDS = 5 * 60;
 
+/** The style classes the panel button can take, so they can be removed by name. */
+const ATTENTION_CLASSES = ['recap-asking', 'recap-finished'];
+
+/** Three pulses, then steady. See _pulse(). */
+const PULSES = 3;
+const PULSE_MS = 320;
+const DIM_OPACITY = 90;
+
 const RecapIndicator = GObject.registerClass(
 class RecapIndicator extends PanelMenu.Button {
     _init(extension) {
@@ -57,6 +65,7 @@ class RecapIndicator extends PanelMenu.Button {
         this._idleWatchId = 0;
         this._activeWatchId = 0;
         this._idle = false;
+        this._pulseId = 0;
 
         const box = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
         this._icon = new St.Icon({
@@ -96,9 +105,13 @@ class RecapIndicator extends PanelMenu.Button {
         });
 
         this._menuOpenId = this.menu.connect('open-state-changed', (menu, open) => {
+            if (!open)
+                return;
             // The answer on screen should be about now, not about half a minute ago.
-            if (open)
-                this._scheduler.wake();
+            this._scheduler.wake();
+            // You have now seen everything the menu is showing, so it stops asking. Done
+            // after the wake so that the rows cleared are the rows that were on screen.
+            this._acknowledgeVisible();
         });
 
         this._sessionModeId = Main.sessionMode.connect('updated', () => this._render());
@@ -168,13 +181,75 @@ class RecapIndicator extends PanelMenu.Button {
         }
 
         const rows = this._rows();
-        this._attention.record(decoded.event, rows);
+        const result = this._attention.record(decoded.event, rows);
+        this._render();
+        // Coalesced and rate-limited events still update the flag, but they do not get to
+        // flash the panel again: that is the whole point of the ceiling.
+        if (result.accepted)
+            this._pulse();
+    }
+
+    /** Opening the menu is acknowledgement: what it showed you has been seen. */
+    _acknowledgeVisible() {
+        const rows = this._rows();
+        if (this._attention.count === 0)
+            return;
+        this._attention.acknowledgeVisible(rows);
         this._render();
     }
 
     /** The rows as they stand, for matching an event against. */
     _rows() {
-        return buildMenu(this._source.state, this._settingsSnapshot()).rows;
+        return buildMenu(this._source.state, this._settingsSnapshot(), Date.now(),
+            this._attention).rows;
+    }
+
+    /**
+     * Colour the button by what is pending. Both classes are defined in stylesheet.css from
+     * the theme's accent colour, with a plain fallback for themes that have none.
+     */
+    _applyAttentionStyle(styleClass) {
+        for (const name of ATTENTION_CLASSES) {
+            if (name !== styleClass)
+                this.remove_style_class_name(name);
+        }
+        if (styleClass !== '' && !this.has_style_class_name(styleClass))
+            this.add_style_class_name(styleClass);
+    }
+
+    /**
+     * Say "look at me" a bounded number of times and then stop.
+     *
+     * Three pulses, not a blink that runs until acknowledged: an indicator that never stops
+     * moving is an accessibility problem as well as an irritating one, and the flag itself
+     * stays up afterwards to carry the message. Nothing runs while the screen is locked, and
+     * the whole thing is cancelled on destroy — an animation left running in the compositor
+     * outlives the extension that started it.
+     */
+    _pulse() {
+        if (this._destroyed || Main.sessionMode.isLocked)
+            return;
+        this._stopPulse();
+
+        let remaining = PULSES * 2;
+        this._pulseId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, PULSE_MS, () => {
+            remaining--;
+            this._icon.opacity = remaining % 2 === 1 ? DIM_OPACITY : 255;
+            if (remaining > 0)
+                return GLib.SOURCE_CONTINUE;
+            // Always finish at full opacity: a pulse that stops halfway is a bug on show.
+            this._icon.opacity = 255;
+            this._pulseId = 0;
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _stopPulse() {
+        if (this._pulseId) {
+            GLib.Source.remove(this._pulseId);
+            this._pulseId = 0;
+        }
+        this._icon.opacity = 255;
     }
 
     async _refresh() {
@@ -202,12 +277,14 @@ class RecapIndicator extends PanelMenu.Button {
     }
 
     _render() {
-        const model = buildMenu(this._source.state, this._settingsSnapshot());
+        const model = buildMenu(this._source.state, this._settingsSnapshot(), Date.now(),
+            this._attention);
 
         this._icon.gicon = this._statusIcon(model.summary.iconName);
         this._label.text = model.summary.label;
         this._label.visible = model.summary.label !== '';
         this.accessible_name = model.summary.tooltip;
+        this._applyAttentionStyle(model.summary.styleClass);
 
         this.menu.removeAll();
         for (const row of model.rows)
@@ -226,6 +303,8 @@ class RecapIndicator extends PanelMenu.Button {
         });
         if (row.resume !== null)
             item.connect('activate', () => this._resume(row));
+        // Clicking a row answers it, whether or not there was anything to resume.
+        item.connect('activate', () => this._attention.acknowledge(row.key));
 
         item.add_child(new St.Icon({
             gicon: this._statusIcon(row.iconName),
@@ -235,7 +314,17 @@ class RecapIndicator extends PanelMenu.Button {
         const text = verticalBox({ x_expand: true, style_class: 'recap-row-text' });
 
         const heading = new St.BoxLayout({ x_expand: true });
-        heading.add_child(new St.Label({ text: row.name, style_class: 'recap-row-name' }));
+        if (row.attention !== null) {
+            // A leading dot, the way an unread mark is drawn everywhere else.
+            heading.add_child(new St.Label({
+                text: '•',
+                style_class: `recap-row-mark recap-${row.attention.kind}`,
+            }));
+        }
+        heading.add_child(new St.Label({
+            text: row.name,
+            style_class: row.attention !== null ? 'recap-row-name recap-row-flagged' : 'recap-row-name',
+        }));
         const aside = [row.agentLabel, row.ageLabel].filter(s => s !== '').join(' · ');
         if (aside !== '') {
             heading.add_child(new St.Label({
@@ -256,8 +345,24 @@ class RecapIndicator extends PanelMenu.Button {
             text.add_child(sentence);
         }
 
+        // What the agent itself said, under recap's sentence and wrapped like it. recap
+        // describes the session; this is the session's own words about right now.
+        if (row.attention !== null && row.attention.message !== '') {
+            const said = new St.Label({
+                text: row.attention.message,
+                style_class: `recap-row-message recap-${row.attention.kind}`,
+            });
+            said.clutter_text.line_wrap = true;
+            said.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+            text.add_child(said);
+        }
+
         item.add_child(text);
-        item.accessible_name = `${row.name}: ${row.statusLabel}. ${row.recap}`;
+        item.accessible_name = [
+            `${row.name}: ${row.statusLabel}.`,
+            row.recap,
+            row.attention === null ? '' : row.attention.message,
+        ].filter(part => part !== '').join(' ');
         return item;
     }
 
@@ -315,6 +420,7 @@ class RecapIndicator extends PanelMenu.Button {
         this._destroyed = true;
 
         this._scheduler.stop();
+        this._stopPulse();
         this._source.destroy();
         this._eventService.stop();
         this._attention.clear();
