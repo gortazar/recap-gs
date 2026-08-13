@@ -11,7 +11,9 @@ dest="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$uuid"
 
 rm -rf "$dest"
 mkdir -p "$dest"
+# The same layout the packed zip has: src/ at the root, bin/ and hooks/ beside it.
 cp -r "$here/src/." "$dest/"
+cp -r "$here/bin" "$here/hooks" "$dest/"
 glib-compile-schemas "$dest/schemas"
 
 echo "installed to $dest"

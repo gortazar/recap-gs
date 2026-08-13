@@ -113,12 +113,15 @@ class RecapIndicator extends PanelMenu.Button {
         });
 
         this._menuOpenId = this.menu.connect('open-state-changed', (menu, open) => {
-            if (!open)
+            if (open) {
+                // The answer on screen should be about now, not about half a minute ago.
+                this._scheduler.wake();
                 return;
-            // The answer on screen should be about now, not about half a minute ago.
-            this._scheduler.wake();
-            // You have now seen everything the menu is showing, so it stops asking. Done
-            // after the wake so that the rows cleared are the rows that were on screen.
+            }
+            // Acknowledged on the way out, not on the way in. Clearing the flags as the
+            // menu opens would take the marks and the agent's message off the screen in the
+            // same instant you went looking for them; you would see a lit panel, open it,
+            // and find nothing marked. So the visit clears them — after you have had it.
             this._acknowledgeVisible();
         });
 

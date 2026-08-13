@@ -2,8 +2,9 @@
 # Boot a real GNOME Shell, load the extension into it, and see what happens.
 #
 # Everything the headless suite cannot ask: does it load at all, does it render a panel
-# button, does its menu fill with rows from a real subprocess, and does disabling it five
-# times leave anything attached to the main loop.
+# button, does its menu fill with rows from a real subprocess, does an event from a separate
+# process light the panel up and clear again when the menu is opened, and does disabling it
+# five times leave anything attached to the main loop or owning a bus name.
 #
 #   ci/smoke-test.sh              run it
 #   ci/smoke-test.sh --shots DIR  and write screenshots there
@@ -54,7 +55,11 @@ trap cleanup EXIT
 
 extensions="$XDG_DATA_HOME/gnome-shell/extensions"
 mkdir -p "$extensions/$UUID" "$extensions/$DRIVER"
+# Laid out the way the packed zip lays it out — src/ at the root, with bin/ and hooks/
+# beside it — because that is what a user installs and what the extension's own paths
+# assume.
 cp -r "$here/src/." "$extensions/$UUID/"
+cp -r "$here/bin" "$here/hooks" "$extensions/$UUID/"
 cp -r "$here/ci/driver/." "$extensions/$DRIVER/"
 glib-compile-schemas "$extensions/$UUID/schemas"
 
@@ -140,7 +145,8 @@ failures = [f for f in results["failures"] if not f.startswith("screenshot ")]
 
 # A screenshot that did not happen is only a failure when one was asked for.
 if shots:
-    for name in ("panel.png", "menu.png", "preferences.png"):
+    for name in ("panel.png", "menu.png", "preferences.png",
+                 "panel-flagged.png", "menu-flagged.png"):
         if not os.path.exists(os.path.join(shots, name)):
             failures.append(f"no screenshot was written to {shots}/{name}")
 

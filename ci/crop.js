@@ -19,6 +19,9 @@ const CROPS = [
     { name: 'panel.png', x: 1000, y: 0, width: 280, height: 34, scale: 2 },
     // The open menu, with the indicator it hangs from still in frame.
     { name: 'menu.png', x: 700, y: 0, width: 580, height: 500, scale: 1 },
+    // The same two, with a project flagged by an agent event.
+    { name: 'panel-flagged.png', x: 1000, y: 0, width: 280, height: 34, scale: 2 },
+    { name: 'menu-flagged.png', x: 700, y: 0, width: 580, height: 500, scale: 1 },
     // preferences.png is left alone: it is a window, and a window in its desktop is a fair
     // picture of a window.
 ];
@@ -37,6 +40,12 @@ for (const crop of CROPS) {
     }
 
     const full = GdkPixbuf.Pixbuf.new_from_file(path);
+    // Idempotent: an image that is already smaller than the crop was cropped by an earlier
+    // run, and cropping it again would take a slice of a slice.
+    if (full.get_width() <= crop.x || full.get_height() <= crop.y) {
+        print(`${crop.name} is already cropped (${full.get_width()}x${full.get_height()})`);
+        continue;
+    }
     const width = Math.min(crop.width, full.get_width() - crop.x);
     const height = Math.min(crop.height, full.get_height() - crop.y);
     let out = full.new_subpixbuf(crop.x, crop.y, width, height);

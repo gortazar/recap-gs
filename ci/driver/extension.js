@@ -19,6 +19,7 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const TARGET = 'recap@recap-gs.patxi';
 const CYCLES = 5;
+const BUS_NAME = 'org.gnome.Shell.Extensions.RecapGs';
 
 // Module scope, because the shell can enable an extension more than once in a session and
 // this driver is a script that must run exactly once: keeping the record and the "already
@@ -173,6 +174,57 @@ export default class DriverExtension extends Extension {
         indicator.menu.close(false);
         await sleep(300);
 
+        // 3a. An agent event, delivered the way an agent delivers one: a separate process
+        // running the shim, talking over the bus. Nothing here reaches into the extension.
+        this._check('exports the event interface', nameHasOwner(BUS_NAME),
+            'nothing owns ' + BUS_NAME + ' while the extension is enabled');
+
+        const shim = `${extensionDir()}/bin/recap-gs-notify`;
+        const payload = JSON.stringify({
+            session_id: 'bbbb2222',
+            cwd: '/home/demo/projects/blog-pipeline',
+            hook_event_name: 'Notification',
+            message: 'Claude needs your permission to run git push',
+        });
+        const delivered = await runShim(shim, 'asking', payload);
+        this._check('the shim exits 0', delivered.status === 0,
+            `recap-gs-notify exited ${delivered.status}: ${delivered.stderr}`);
+
+        await this._waitFor(() => hasStyleClass(indicator, 'recap-asking'), 5000);
+        this._check('an event lights the panel up',
+            hasStyleClass(indicator, 'recap-asking'),
+            `the panel button's style classes are ${styleClassesOf(indicator)}`);
+
+        // The flagged row leads the menu and carries what the agent said.
+        indicator.menu.open(false);
+        await sleep(600);
+        const firstRow = firstRowText(indicator);
+        this._check('the flagged project leads the menu',
+            firstRow.includes('blog-pipeline'),
+            `the first row reads ${JSON.stringify(firstRow)}`);
+        this._check('the row carries the agent\'s own words',
+            firstRow.includes('permission to run git push'),
+            `the first row reads ${JSON.stringify(firstRow)}`);
+        await this._screenshot('menu-flagged.png');
+        await this._screenshot('panel-flagged.png');
+
+        // Visiting the menu is acknowledgement, taken when it closes: the marks have to
+        // survive long enough to be read.
+        this._check('the flag survives the menu being open',
+            hasStyleClass(indicator, 'recap-asking'),
+            'the flag was cleared before it could be read');
+        indicator.menu.close(false);
+        await sleep(800);
+        this._check('closing the menu clears the flag',
+            !hasStyleClass(indicator, 'recap-asking'),
+            `the panel button's style classes are ${styleClassesOf(indicator)}`);
+
+        // The pulse is bounded, and it does not leave the icon half-faded or a source
+        // behind — the two ways an animation in the compositor goes wrong.
+        await sleep(2500);
+        this._check('the pulse finished at full opacity', iconOpacity(indicator) === 255,
+            `the icon's opacity is ${iconOpacity(indicator)}`);
+
         // 3b. The preferences window opens, in its own process, and is worth a picture too.
         if (this._shots) {
             try {
@@ -227,6 +279,10 @@ export default class DriverExtension extends Extension {
         const leaks = this._ledger.leaked();
         this._check('leaves no timer behind', leaks.length === 0,
             `still attached to the main loop: ${leaks.join(', ')}`);
+        // A bus name left owned by a disabled extension swallows every hook call after it.
+        await this._waitFor(() => !nameHasOwner(BUS_NAME), 5000);
+        this._check('gives the bus name back', !nameHasOwner(BUS_NAME),
+            BUS_NAME + ' is still owned after the extension was disabled');
         this._results.cycles = CYCLES;
 
         this._finish();
@@ -327,6 +383,72 @@ function prefsWindow() {
             return window;
     }
     return null;
+}
+
+function extensionDir() {
+    return `${GLib.get_user_data_dir()}/gnome-shell/extensions/${TARGET}`;
+}
+
+function nameHasOwner(name) {
+    try {
+        const reply = Gio.DBus.session.call_sync(
+            'org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
+            'NameHasOwner', new GLib.Variant('(s)', [name]),
+            null, Gio.DBusCallFlags.NONE, 2000, null);
+        return reply.deepUnpack()[0];
+    } catch (e) {
+        void e;
+        return false;
+    }
+}
+
+/** Run the shim as an agent would: a separate process, payload on stdin. */
+function runShim(path, kind, payload) {
+    return new Promise((resolve, reject) => {
+        const proc = Gio.Subprocess.new([path, kind],
+            Gio.SubprocessFlags.STDIN_PIPE | Gio.SubprocessFlags.STDOUT_PIPE |
+            Gio.SubprocessFlags.STDERR_PIPE);
+        proc.communicate_utf8_async(payload, null, (subprocess, result) => {
+            try {
+                const [, stdout, stderr] = subprocess.communicate_utf8_finish(result);
+                resolve({ status: subprocess.get_exit_status(), stdout, stderr });
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
+}
+
+function styleClassesOf(indicator) {
+    return indicator.get_style_class_name?.() ?? '';
+}
+
+function hasStyleClass(indicator, name) {
+    return styleClassesOf(indicator).split(/\s+/).includes(name);
+}
+
+function iconOpacity(indicator) {
+    const icon = indicator.get_children()
+        .flatMap(child => child.get_children?.() ?? [])
+        .find(child => child.constructor?.name?.includes('Icon'));
+    return icon?.opacity ?? 255;
+}
+
+/** Everything the first row of the menu says, joined. */
+function firstRowText(indicator) {
+    const [first] = indicator.menu.box.get_children()
+        .filter(child => (child.style_class ?? '').includes('recap-row'));
+    if (!first)
+        return '';
+    const texts = [];
+    const walk = actor => {
+        if (typeof actor.get_text === 'function')
+            texts.push(actor.get_text());
+        for (const child of actor.get_children?.() ?? [])
+            walk(child);
+    };
+    walk(first);
+    return texts.join(' ');
 }
 
 function stateOf() {
