@@ -28,6 +28,9 @@ import { buildResumeLaunch } from './lib/resume.js';
 import { Attention } from './lib/attention.js';
 import { decodeEvent } from './lib/events.js';
 import { EventService } from './lib/eventService.js';
+import {
+    isTerminalWindow, matchesNotificationApp, notificationEvent,
+} from './lib/sources.js';
 
 /**
  * A vertical box, spelled the way this shell spells it. St.BoxLayout gained `orientation`
@@ -89,7 +92,10 @@ class RecapIndicator extends PanelMenu.Button {
         this._eventService = new EventService({
             onEvent: (kind, payload) => this._onAgentEvent(kind, payload),
         });
-        this._eventService.start();
+
+        this._trayIds = [];
+        this._windowAttentionId = 0;
+        this._applySources();
         this._scheduler = new Scheduler({
             intervalSeconds: this._settings.get_int('refresh-interval'),
             onTick: () => this._refresh(),
@@ -100,6 +106,8 @@ class RecapIndicator extends PanelMenu.Button {
         this._settingsChangedId = this._settings.connect('changed', (settings, key) => {
             if (key === 'refresh-interval')
                 this._scheduler.setInterval(settings.get_int('refresh-interval'));
+            else if (key.startsWith('source-'))
+                this._applySources();
             else
                 this._scheduler.wake();
         });
@@ -192,6 +200,106 @@ class RecapIndicator extends PanelMenu.Button {
         // the same single-flight refresher as everything else — two refreshes never overlap
         // — and it spawns nothing while the screen is locked or the session is idle.
         this._scheduler.nudge();
+    }
+
+    /**
+     * Turn each event source on or off to match the settings.
+     *
+     * Every source is optional and every one is undone by the same code that set it up, so
+     * that turning one off at runtime leaves exactly as little behind as disabling the
+     * extension does.
+     */
+    _applySources() {
+        const settings = this._settings;
+
+        if (settings.get_boolean('source-dbus'))
+            this._eventService.start();
+        else
+            this._eventService.stop();
+
+        this._disconnectTray();
+        if (settings.get_boolean('source-notifications'))
+            this._connectTray();
+
+        if (settings.get_boolean('source-terminal-bell')) {
+            if (this._windowAttentionId === 0) {
+                this._windowAttentionId = global.display.connect(
+                    'window-demands-attention', (display, window) => this._onWindowAttention(window));
+            }
+        } else if (this._windowAttentionId !== 0) {
+            global.display.disconnect(this._windowAttentionId);
+            this._windowAttentionId = 0;
+        }
+    }
+
+    /**
+     * Listen to the message tray, for people whose agents already notify-send.
+     *
+     * Wrapped in a try: the Source and Notification classes were reworked in GNOME 46 and
+     * have moved since, and this source is worth exactly nothing if the price is an
+     * extension that fails to enable on a version we guessed wrong about. If it cannot be
+     * connected, it stays off and says so once in the log.
+     */
+    _connectTray() {
+        try {
+            const tray = Main.messageTray;
+            this._trayIds.push([tray, tray.connect('source-added',
+                (_tray, source) => this._watchSource(source))]);
+            for (const source of tray.getSources?.() ?? [])
+                this._watchSource(source);
+        } catch (e) {
+            console.debug(`recap: cannot watch the message tray on this shell (${e.message})`);
+            this._disconnectTray();
+        }
+    }
+
+    _watchSource(source) {
+        try {
+            this._trayIds.push([source, source.connect('notification-added',
+                (_source, notification) => this._onNotification(source, notification))]);
+        } catch (e) {
+            console.debug(`recap: cannot watch a notification source (${e.message})`);
+        }
+    }
+
+    _disconnectTray() {
+        for (const [object, id] of this._trayIds) {
+            try {
+                object.disconnect(id);
+            } catch (e) {
+                void e; // the source may already be gone; that is the disconnection we wanted
+            }
+        }
+        this._trayIds = [];
+    }
+
+    _onNotification(source, notification) {
+        const appName = source?.title ?? source?.name ?? '';
+        if (!matchesNotificationApp(this._settings.get_strv('notification-apps'), appName))
+            return;
+        this._raise(notificationEvent(
+            notification?.title ?? appName, notification?.body ?? ''));
+    }
+
+    /**
+     * A terminal asked for attention — a bell, usually. It says nothing about which project,
+     * so it raises fleet attention and nothing more, and it is off by default because any
+     * bell from any terminal reaches here.
+     */
+    _onWindowAttention(window) {
+        if (!isTerminalWindow(window?.get_wm_class?.() ?? ''))
+            return;
+        this._raise({ kind: 'asking', cwd: '', message: 'A terminal asked for attention' });
+    }
+
+    /** One way in for the sources that do not go through the bus. */
+    _raise(event) {
+        const result = this._attention.record(event, this._rows());
+        this._render();
+        if (result.accepted) {
+            this._pulse();
+            this._scheduler.nudge();
+        }
     }
 
     /** Opening the menu is acknowledgement: what it showed you has been seen. */
@@ -428,6 +536,11 @@ class RecapIndicator extends PanelMenu.Button {
         this._stopPulse();
         this._source.destroy();
         this._eventService.stop();
+        this._disconnectTray();
+        if (this._windowAttentionId !== 0) {
+            global.display.disconnect(this._windowAttentionId);
+            this._windowAttentionId = 0;
+        }
         this._attention.clear();
 
         if (this._settingsChangedId) {

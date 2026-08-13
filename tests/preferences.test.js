@@ -1,6 +1,8 @@
 import { suite, test, assert, assertEqual, assertDeepEqual } from './harness.js';
 import { readFile } from './util.js';
-import { PREFERENCE_GROUPS, preferenceKeys, splitRoots, joinRoots } from '../src/lib/preferences.js';
+import {
+    PREFERENCE_GROUPS, PREFERENCE_PAGES, preferenceKeys, splitRoots, joinRoots,
+} from '../src/lib/preferences.js';
 import { SCHEMA_ID } from './metadata.test.js';
 
 function schemaKeys() {
@@ -22,16 +24,35 @@ suite('preferences', () => {
     });
 
     test('every row says what it is for', () => {
+        const types = ['int', 'string', 'boolean', 'choice', 'paths', 'apps', 'command', 'status'];
         for (const group of PREFERENCE_GROUPS) {
             assert(group.title.length > 0, 'a group with no title');
             for (const row of group.rows) {
                 assert(row.title.length > 0, `${row.key}: no title`);
-                assert(['int', 'string', 'boolean', 'choice', 'paths'].includes(row.type),
-                    `${row.key}: unknown row type ${row.type}`);
+                assert(types.includes(row.type), `${row.key}: unknown row type ${row.type}`);
                 if (row.type === 'choice')
                     assert(row.choices.length > 1, `${row.key}: a choice of one`);
             }
         }
+    });
+
+    test('the window has a page for the panel and a page for detection', () => {
+        assertDeepEqual(PREFERENCE_PAGES.map(page => page.title), ['General', 'Detection']);
+        for (const page of PREFERENCE_PAGES) {
+            assert(page.groups.length > 0, `${page.title}: no groups`);
+            assert(page.iconName.endsWith('-symbolic'), `${page.title}: not a symbolic icon`);
+        }
+    });
+
+    test('the Detection page answers "why did nothing light up?"', () => {
+        const detection = PREFERENCE_PAGES.find(page => page.title === 'Detection');
+        const rows = detection.groups.flatMap(group => group.rows);
+        assert(rows.some(row => row.type === 'command' && row.command.includes('install-hooks')),
+            'no way to install the hooks');
+        assert(rows.some(row => row.type === 'status'),
+            'no sign of whether anything has ever arrived');
+        for (const key of ['source-dbus', 'source-notifications', 'source-terminal-bell'])
+            assert(rows.some(row => row.key === key), `no switch for ${key}`);
     });
 
     test('the refresh interval is offered in a range the schema allows', () => {
@@ -46,7 +67,7 @@ suite('preferences', () => {
         // The window is built from the same description this suite checks, so it cannot
         // drift from the schema without one of these failing.
         const source = readFile('src', 'prefs.js');
-        assert(source.includes('PREFERENCE_GROUPS'), 'prefs.js does not use the description');
+        assert(source.includes('PREFERENCE_PAGES'), 'prefs.js does not use the description');
         assert(source.includes('bind'), 'prefs.js never binds a setting');
     });
 });

@@ -24,6 +24,7 @@ import './attention.test.js';
 import './events.test.js';
 import './eventService.test.js';
 import './hooks.test.js';
+import './sources.test.js';
 
 import { run } from './harness.js';
 

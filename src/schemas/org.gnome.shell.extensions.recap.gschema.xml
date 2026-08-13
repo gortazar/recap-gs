@@ -72,5 +72,38 @@
       </description>
     </key>
 
+    <key name="source-dbus" type="b">
+      <default>true</default>
+      <summary>Let agents tell the panel directly</summary>
+      <description>
+        Exports org.gnome.Shell.Extensions.RecapGs, which the recap-gs-notify shim calls
+        from your agents' hooks. This is the only source that can name the project an event
+        came from; the others can only say that something happened.
+      </description>
+    </key>
+
+    <key name="source-notifications" type="b">
+      <default>false</default>
+      <summary>Treat notifications from these applications as an agent asking for you</summary>
+    </key>
+
+    <key name="notification-apps" type="as">
+      <default>['Claude Code','claude','opencode']</default>
+      <summary>Which applications' notifications count</summary>
+      <description>
+        Matched against the notification's application name, case-insensitively and in
+        whole: an entry of "code" does not match "Visual Studio Code".
+      </description>
+    </key>
+
+    <key name="source-terminal-bell" type="b">
+      <default>false</default>
+      <summary>Treat a terminal asking for attention as an agent asking for you</summary>
+      <description>
+        Off by default on purpose: any bell from any terminal raises it — a build finishing,
+        a completion beep — and a signal that lies is worse than one that is late.
+      </description>
+    </key>
+
   </schema>
 </schemalist>
