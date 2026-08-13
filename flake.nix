@@ -146,13 +146,18 @@
             recap-gs-pack "$src/src" "$PWD/out"
             zip="$PWD/out/${uuid}.shell-extension.zip"
 
-            unzip -l "$zip"
+            # Listed once into a variable, and searched without a pipeline. `unzip -l |
+            # grep -q` looks equivalent and is not: grep exits at the first match, unzip
+            # dies of SIGPIPE, and with pipefail the whole check fails at random depending
+            # on which of them the scheduler ran first. It did exactly that here once.
+            listing="$(unzip -l "$zip")"
+            echo "$listing"
             # The zip is what users actually get, and lib/ is the easy thing to leave out:
             # the extension does not load without it.
             for entry in metadata.json extension.js prefs.js LICENSE stylesheet.css \
                 lib/contract.js lib/menu.js lib/source.js \
                 icons/recap-waiting-symbolic.svg schemas/gschemas.compiled; do
-              unzip -l "$zip" | grep -q " $entry\$" \
+              grep -q " $entry\$" <<< "$listing" \
                 || { echo "packed zip is missing $entry" >&2; exit 1; }
             done
             echo "pack OK" > "$out"
