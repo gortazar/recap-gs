@@ -80,6 +80,16 @@ else
     echo "recap-gs: log out and back in, then enable it in the Extensions app"
 fi
 
+cat <<EOF
+
+To have the panel light up the moment a session asks you something, wire your agents' hooks
+up to it — it will show you the change and ask first:
+
+  $dest/hooks/install-hooks.sh
+
+Without that the panel still works; it just learns things up to a refresh interval late.
+EOF
+
 command -v recap >/dev/null 2>&1 || cat <<'EOF'
 
 recap-gs shows what the `recap` command reports, and recap is not on your PATH yet.

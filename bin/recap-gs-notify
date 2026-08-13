@@ -1,0 +1,45 @@
+#!/bin/sh
+# recap-gs-notify — tell the recap GNOME Shell extension that something happened.
+#
+#     recap-gs-notify asking    < the agent's hook JSON on stdin
+#     recap-gs-notify finished  < the agent's hook JSON on stdin
+#
+# This runs inside your coding agent, in the middle of your work, every time a session stops
+# to ask you something or finishes answering. So it is built to be boring:
+#
+#   - **it always exits 0.** A hook that can fail the agent it is attached to is a bug in
+#     this feature, not in the agent;
+#   - **it never blocks.** One bus call, bounded by a timeout, output discarded;
+#   - **it does nothing at all when the extension is not running.** No bus name, no error, no
+#     message on your terminal;
+#   - **it does not parse.** The agent's JSON is passed through untouched, so no jq, no
+#     schema knowledge, and nothing to go wrong here when an agent adds a field.
+set -u
+
+kind="${1:-}"
+[ -n "$kind" ] || exit 0
+
+# Capped here as well as at the other end: this becomes an argument, and an argument list has
+# a size limit that a 10 MiB transcript path list would find.
+payload="$(head -c 16384 2>/dev/null || true)"
+[ -n "$payload" ] || payload='{}'
+
+command -v gdbus >/dev/null 2>&1 || exit 0
+
+BUS_NAME=org.gnome.Shell.Extensions.RecapGs
+OBJECT_PATH=/org/gnome/Shell/Extensions/RecapGs
+
+# `timeout` is in coreutils and all but certain to be here; without it the call still has
+# gdbus's own --timeout, which is what actually bounds the wait.
+if command -v timeout >/dev/null 2>&1; then
+    timeout 3 gdbus call --session --timeout 2 \
+        --dest "$BUS_NAME" --object-path "$OBJECT_PATH" \
+        --method "$BUS_NAME.Event" "$kind" "$payload" >/dev/null 2>&1
+else
+    gdbus call --session --timeout 2 \
+        --dest "$BUS_NAME" --object-path "$OBJECT_PATH" \
+        --method "$BUS_NAME.Event" "$kind" "$payload" >/dev/null 2>&1
+fi
+
+# Deliberate: whatever happened above, this hook succeeded as far as the agent is concerned.
+exit 0

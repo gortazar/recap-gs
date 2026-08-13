@@ -28,6 +28,9 @@
           text = ''
             src="$1"
             outDir="$2"
+            # bin/ and hooks/ live beside src/, not inside it: they are not shell-side code.
+            binDir="$(dirname "$src")/bin"
+            hooksDir="$(dirname "$src")/hooks"
             stage="$(mktemp -d)"
             trap 'rm -rf "$stage"' EXIT
 
@@ -42,10 +45,16 @@
             jq -e --arg u '${uuid}' '.uuid == $u' "$src/metadata.json" >/dev/null \
               || { echo "metadata.json: uuid is not ${uuid}" >&2; exit 1; }
 
-            mkdir -p "$stage/schemas" "$stage/lib"
+            mkdir -p "$stage/schemas" "$stage/lib" "$stage/bin" "$stage/hooks"
             cp "$src/metadata.json" "$src/extension.js" "$src/prefs.js" \
               "$src/LICENSE" "$stage/"
             cp "$src"/lib/*.js "$stage/lib/"
+            # The shim and the installer travel inside the extension: someone who installed
+            # from a release has no checkout to run them from, and the preferences window
+            # points at these exact paths.
+            cp "$binDir"/recap-gs-notify "$stage/bin/"
+            cp "$hooksDir"/install-hooks.sh "$hooksDir"/opencode-recap-gs.js "$stage/hooks/"
+            chmod +x "$stage/bin/recap-gs-notify" "$stage/hooks/install-hooks.sh"
             cp "$src"/schemas/*.gschema.xml "$stage/schemas/"
             [ -f "$src/stylesheet.css" ] && cp "$src/stylesheet.css" "$stage/"
             [ -d "$src/icons" ] && cp -r "$src/icons" "$stage/"
@@ -162,7 +171,8 @@
             # The zip is what users actually get, and lib/ is the easy thing to leave out:
             # the extension does not load without it.
             for entry in metadata.json extension.js prefs.js LICENSE stylesheet.css \
-                lib/contract.js lib/menu.js lib/source.js \
+                lib/contract.js lib/menu.js lib/source.js lib/attention.js \
+                bin/recap-gs-notify hooks/install-hooks.sh hooks/opencode-recap-gs.js \
                 icons/recap-waiting-symbolic.svg schemas/gschemas.compiled; do
               grep -q " $entry\$" <<< "$listing" \
                 || { echo "packed zip is missing $entry" >&2; exit 1; }
