@@ -1,5 +1,7 @@
 # recap for GNOME Shell
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=gortazar_recap-gs&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=gortazar_recap-gs)
+
 Your coding agents are working in six directories at once. One of them stopped ten minutes
 ago to ask you a question, and you have no idea which. This puts the answer in the top bar.
 

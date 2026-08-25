@@ -32,3 +32,11 @@ jobs:
         with:
           name: shell-extension-zip
           path: result/*.shell-extension.zip
+
+  # The SonarQube Cloud quality gate. A job of its own, beside `check` rather than inside
+  # it, so a red gate can never be mistaken for a failing test suite — and because the gate
+  # is advisory: it reports, it does not block.
+  sonar:
+    uses: gortazar/aideas/.github/workflows/sonar.yml@v1
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
