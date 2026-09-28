@@ -1,4 +1,13 @@
-/* Deliberately small. Everything here is spacing and emphasis: colours, fonts and the icon
+/* This is not CSS. It is St's stylesheet dialect — GNOME Shell's own toolkit language,
+   which borrows CSS's syntax and then adds properties of its own, `spacing` among them.
+   So an analyser that only knows CSS calls the valid lines below invalid: SonarQube Cloud's
+   css:S4654 raised two BLOCKER bugs here for `Unknown property "spacing"`. The rule is
+   wrong about the whole dialect rather than about these lines, so it is deactivated in a
+   quality profile ("GNOME Shell (St) stylesheets") rather than dismissed issue by issue or
+   worked around by editing correct code. The decision is recorded in this fleet's ledger,
+   aideas/ideas/quality-gate/exclusions.md, under Quality profiles.
+
+   Deliberately small. Everything here is spacing and emphasis: colours, fonts and the icon
    tint come from the user's theme, which is why the status icons are symbolic. */
 
 .recap-row {
