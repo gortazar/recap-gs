@@ -97,4 +97,19 @@ suite('code hygiene', () => {
                 `stylesheet.css styles ${selector[1]}, which is not ours`);
         }
     });
+
+    test('the stylesheet keeps its St properties, and says why they look wrong', () => {
+        // SonarQube Cloud raised two BLOCKER bugs here for `Unknown property "spacing"`
+        // (css:S4654). `spacing` is a real St property; this file is GNOME Shell's own
+        // stylesheet dialect, which no CSS analyser knows. The remedy was to turn the rule
+        // off in a quality profile, not to edit correct code into something an analyser
+        // prefers — so guard the correct code, and guard the note that explains it. Anyone
+        // reaching for these lines to make a gate go green is doing the wrong repair.
+        const css = readFile('src', 'stylesheet.css');
+        assert(/^\s*spacing:\s*8px;/m.test(css), '.recap-row lost its St spacing');
+        assert(/^\s*spacing:\s*2px;/m.test(css), 'the wrapped text rows lost their St spacing');
+        assert(css.includes('St'), 'the stylesheet does not say it is St rather than CSS');
+        assert(css.includes('css:S4654'),
+            'the stylesheet does not name the rule, so the next reader cannot find the decision');
+    });
 });

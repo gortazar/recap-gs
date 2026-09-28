@@ -183,6 +183,30 @@ It is not in CI: GitHub's runners have no GNOME Shell, and installing one plus a
 monitor to run it is a much bigger dependency than the thing it checks. Run it by hand before
 a release.
 
+### Static analysis, and the one rule this project opts out of
+
+Every push and pull request is analysed by [SonarQube Cloud](https://sonarcloud.io/project/overview?id=gortazar_recap-gs),
+and a red quality gate blocks the merge.
+
+**One rule is turned off for this project: `css:S4654`, "CSS properties should be valid".**
+[`src/stylesheet.css`](src/stylesheet.css) is not CSS — it is St's stylesheet dialect, GNOME
+Shell's own toolkit language, which borrows CSS's syntax and adds properties of its own.
+Sonar has no analyser for St, so the CSS one is used, and it reported `spacing` — a real St
+property, doing real work in two rules — as an unknown property. Two BLOCKER bugs, enough on
+their own to give a project with no other defect a reliability rating of **E**.
+
+The rule is wrong about the dialect rather than about those two lines, so the remedy is a
+configuration change and not a dismissal: the project is assigned a copied quality profile,
+`GNOME Shell (St) stylesheets`, with that one rule deactivated. Nothing else changes — the
+rest of the stylesheet is still analysed, every other CSS rule still applies, and no issue's
+status was edited to make the gate go green. The cost is written down too: this project no
+longer receives updates to the built-in CSS profile, and `css:S4654` will not catch a genuine
+property typo here.
+
+The decision, and the script that re-applies it, live in the
+[aideas](https://github.com/gortazar/aideas) workshop repository —
+`ideas/quality-gate/exclusions.md` and `ideas/quality-gate/scripts/ensure-quality-profile.sh`.
+
 ## The contract with recap
 
 `recap --json` is a versioned public interface, and this extension is written against
