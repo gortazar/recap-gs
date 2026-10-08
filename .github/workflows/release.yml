@@ -28,11 +28,30 @@ jobs:
 
       # The tag says which version this is; metadata.json and the tag must agree, or people
       # end up installing something other than what the release notes describe.
+      #
+      # Until 0.5 this step read metadata.json nowhere — it checked the tag was non-empty
+      # and passed, which is why it could not have caught the manifest having no version at
+      # all. It compares them now, and fails the run rather than publishing a release whose
+      # asset contradicts its own tag.
       - name: Check the tag against metadata.json
         run: |
+          set -euo pipefail
           tag="${GITHUB_REF_NAME#v}"
-          echo "tag says $tag"
-          test -n "$tag"
+          manifest="$(jq -r '."version-name" // empty' src/metadata.json)"
+          echo "tag says '$tag', src/metadata.json says '$manifest'"
+          if [ -z "$tag" ]; then
+            echo "::error::the tag is empty after stripping its leading v" >&2
+            exit 1
+          fi
+          if [ -z "$manifest" ]; then
+            echo "::error::src/metadata.json has no version-name to check the tag against" >&2
+            exit 1
+          fi
+          if [ "$tag" != "$manifest" ]; then
+            echo "::error::tag v$tag does not match version-name $manifest — refusing to publish" >&2
+            exit 1
+          fi
+          echo "tag and manifest agree on $tag"
 
       - name: Pack the extension
         run: |
