@@ -503,6 +503,12 @@ class RecapIndicator extends PanelMenu.Button {
             const launcher = new Gio.SubprocessLauncher({ flags: Gio.SubprocessFlags.NONE });
             // Belt and braces with the terminal's own --working-directory: the terminals
             // that have no such flag inherit this instead.
+            //
+            // It is only ever belt and braces, though, and for Terminator it buys nothing
+            // at all: a second `terminator` invocation is handed to the already-running
+            // instance over D-Bus, and that instance spawns the window from *its* own
+            // environment and directory, not ours. Measured — see ci/verify-terminator.sh.
+            // Which is why the --working-directory flag is the part that matters.
             launcher.set_cwd(launch.cwd);
             launcher.spawnv(launch.argv);
         } catch (e) {
