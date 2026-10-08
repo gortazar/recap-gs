@@ -25,6 +25,7 @@ export const TERMINAL_WM_CLASSES = Object.freeze([
     'org.gnome.Console', 'kgx',
     'org.gnome.Ptyxis', 'ptyxis',
     'org.gnome.Terminal', 'gnome-terminal-server',
+    'Terminator', 'terminator',
     'konsole', 'org.kde.konsole',
     'xfce4-terminal',
     'tilix',

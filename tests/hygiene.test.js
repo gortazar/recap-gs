@@ -88,6 +88,28 @@ suite('code hygiene', () => {
         assert(onDestroy.includes('this._attention.clear()'), 'the flags outlive the indicator');
     });
 
+    test('an async method called for its side effect says what happens when it fails', () => {
+        // A bare `this._someAsyncThing()` turns every throw inside it into an unhandled
+        // promise rejection: no log line, the side effect silently missing, and nothing to
+        // find afterwards. `_watchIdle` is the live example — its dynamic import is guarded,
+        // but constructing the idle monitor is not, so a shell with the typelib and no
+        // working monitor would lose idle suppression without a word.
+        const source = readFile('src', 'extension.js');
+        const asyncMethods = [...source.matchAll(/^\s*async\s+(_\w+)\s*\(/gm)].map(m => m[1]);
+        assert(asyncMethods.length > 0, 'no async methods in extension.js — has it moved?');
+
+        for (const name of asyncMethods) {
+            for (const call of source.matchAll(new RegExp(`this\\.${name}\\(`, 'g'))) {
+                const before = source.slice(0, call.index);
+                const after = source.slice(call.index);
+                const awaited = /await\s+$/.test(before);
+                const handled = /^this\.\w+\([^)]*\)\s*\.catch\(/.test(after);
+                assert(awaited || handled,
+                    `this.${name}() is called without await and without .catch()`);
+            }
+        }
+    });
+
     test('the packed stylesheet only styles this extension\'s own classes', () => {
         // A rule matching a shell class would restyle the rest of the desktop, which is a
         // rejection and a very confusing bug report.

@@ -25,6 +25,10 @@ session was asked and where it got to. **Click a row and the session resumes** �
 opens in the directory that session was running in, and `claude --resume` (or
 `opencode --session`) picks it up where it stopped.
 
+Since 0.4 that terminal is **Terminator** where it is installed, and one of the GNOME
+terminals otherwise. Nobody has Terminator by accident, so having it is already an answer to
+which terminal you want; name a different one in the preferences and that wins outright.
+
 ## Notifications: the moment it happens
 
 Polling every 30 seconds means you learn that a session is waiting for you up to 30 seconds
@@ -118,7 +122,8 @@ agent needs nothing from you; a waiting one is the reason to look.
 
 Refresh interval, the path to recap, which of recap's filters to pass (`--since`, `--agent`,
 project roots), whether to show the count, whether to list finished and idle sessions, and
-which terminal to open when you click a row.
+which terminal to open when you click a row — left empty it prefers Terminator, then the
+GNOME terminals, then the rest of the eleven it knows how to hand a command to.
 
 ## What it does not do
 
@@ -164,14 +169,23 @@ refresh schedule, the resume command lines and the whole attention model are all
 plain `gjs`.
 [`src/extension.js`](src/extension.js) is creation and destruction and nothing else.
 
-Two things the suite cannot ask, so a script does instead:
+The things the suite cannot ask, so a script does instead:
 
 ```sh
 ci/smoke-test.sh                  # boot a real headless shell and load the extension into it
+ci/verify-terminator.sh           # a resume really lands in the session's own directory
 scripts/screenshot.sh             # the same run, with the pictures above taken from it
 scripts/install-local.sh          # install the working tree for a hand-try
 scripts/record-fixtures.sh        # re-record tests/fixtures from the real recap binary
 ```
+
+`ci/verify-terminator.sh` exists because Terminator is the one terminal in the list where
+"did it open in the right directory?" is a real question: a second `terminator` invocation is
+handed to the already-running instance over D-Bus, and that instance opens the window from
+its own environment. If `--working-directory` did not survive that, a window would still
+appear and the agent would still resume — against the wrong project. The script launches from
+`/` so an inherited directory cannot pass for one that was set, and checks both the D-Bus
+hand-off and a standalone instance.
 
 `ci/smoke-test.sh` starts a headless GNOME Shell with a throwaway `HOME` of its own, lets it
 load the extension out of `enabled-extensions` the way a session would, checks that the panel

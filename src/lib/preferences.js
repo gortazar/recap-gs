@@ -88,9 +88,9 @@ const PANEL_AND_MENU_GROUPS = [
                 key: 'terminal',
                 type: 'string',
                 title: 'Terminal',
-                subtitle: 'Opened in the session\'s own directory to resume it. Empty picks ' +
-                    'the first terminal found.',
-                placeholder: 'kgx',
+                subtitle: 'Opened in the session\'s own directory to resume it. Empty ' +
+                    'prefers Terminator, then the first terminal found.',
+                placeholder: 'terminator',
             },
         ],
     },
