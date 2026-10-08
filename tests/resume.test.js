@@ -64,12 +64,25 @@ suite('choosing a terminal', () => {
         assertEqual(terminal.name, 'xterm');
     });
 
-    test('prefers the GNOME terminals when several are installed', () => {
-        // This is a GNOME Shell extension: the desktop's own terminal is the least
-        // surprising window to open.
-        assertEqual(pickTerminal('', everything).name, TERMINALS[0].name);
-        assert(['kgx', 'ptyxis'].includes(TERMINALS[0].name),
-            `expected a GNOME terminal first, got ${TERMINALS[0].name}`);
+    test('prefers Terminator when several terminals are installed', () => {
+        // Until 0.4 this preferred the GNOME terminals, on the grounds that the desktop's
+        // own terminal is the least surprising window to open. Terminator displaces them
+        // because installing it is itself a deliberate choice — nobody has it by accident —
+        // and the `terminal` preference remains the escape hatch for anyone who disagrees.
+        assertEqual(pickTerminal('', everything).name, 'terminator');
+        assertEqual(TERMINALS[0].name, 'terminator');
+    });
+
+    test('a machine without Terminator falls back to the GNOME terminals, as before', () => {
+        // The reordering must not cost anyone a working resume: with Terminator absent the
+        // list behaves exactly as it did at 0.3.
+        const withoutTerminator = name => name !== 'terminator';
+        assertEqual(pickTerminal('', withoutTerminator).name, 'kgx');
+        assertEqual(pickTerminal('', name => name === 'gnome-terminal').name, 'gnome-terminal');
+    });
+
+    test('an explicit preference still outranks Terminator', () => {
+        assertEqual(pickTerminal('konsole', everything).name, 'konsole');
     });
 
     test('a configured terminal that is not installed falls back rather than failing', () => {

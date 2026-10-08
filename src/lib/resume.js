@@ -29,19 +29,23 @@ export function agentCommand(target) {
 }
 
 /**
- * The terminals this extension knows how to hand a command to, in order of preference. The
- * GNOME ones come first: this is a GNOME Shell extension, and the desktop's own terminal is
- * the least surprising window to have appear.
+ * The terminals this extension knows how to hand a command to, in order of preference.
+ *
+ * Terminator comes first. Everything after it is ordered GNOME-first on the old grounds —
+ * this is a GNOME Shell extension, and the desktop's own terminal is the least surprising
+ * window to have appear — but Terminator outranks all of them because nobody has it by
+ * accident: installing it is already a statement about which terminal you want. Anyone who
+ * disagrees names theirs in the `terminal` preference, which still wins outright.
  */
 export const TERMINALS = [
-    terminal('kgx', dir => [`--working-directory=${dir}`, '--']),
-    terminal('ptyxis', dir => [`--working-directory=${dir}`, '--']),
-    terminal('gnome-terminal', dir => [`--working-directory=${dir}`, '--']),
     // -x, not -e: Terminator's -e/--command takes the whole command as one string, while
     // -x/--execute takes the rest of the line. The generic -e fallback an unlisted terminal
     // gets would hand it `claude` alone and then try to read `--resume <id>` as Terminator's
     // own arguments.
     terminal('terminator', dir => [`--working-directory=${dir}`, '-x']),
+    terminal('kgx', dir => [`--working-directory=${dir}`, '--']),
+    terminal('ptyxis', dir => [`--working-directory=${dir}`, '--']),
+    terminal('gnome-terminal', dir => [`--working-directory=${dir}`, '--']),
     terminal('konsole', dir => ['--workdir', dir, '-e']),
     terminal('xfce4-terminal', dir => [`--working-directory=${dir}`, '-x']),
     terminal('tilix', dir => [`--working-directory=${dir}`, '-e']),
