@@ -36,7 +36,12 @@
 
             # extensions.gnome.org rejects a metadata.json missing any of these, and so
             # does gnome-extensions pack.
-            for field in uuid name description shell-version url; do
+            #
+            # version-name is not one EGO requires, but it is the only thing in the zip that
+            # says which release a user is running — and the unit test that pins it reads the
+            # *tree*, not the artefact. This is the check that covers a zip assembled from
+            # something other than the tree the suite ran against.
+            for field in uuid name description shell-version url version-name; do
               jq -e --arg f "$field" \
                 'has($f) and (.[$f] | if type == "array" then length > 0 else . != "" end)' \
                 "$src/metadata.json" >/dev/null \
@@ -93,6 +98,8 @@
             pkgs.glib.dev # glib-compile-schemas
             pkgs.eslint
             pkgs.zip
+            pkgs.unzip # tools/check-release.sh reads metadata.json out of the published zip
+            pkgs.curl # ... which it downloads first
             pkgs.jq
             pkgs.git
             packExtension

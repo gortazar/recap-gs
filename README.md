@@ -9,6 +9,15 @@ ago to ask you a question, and you have no idea which. This puts the answer in t
 curl -fsSL https://raw.githubusercontent.com/gortazar/recap-gs/main/install.sh | sh
 ```
 
+It prints what it installed — `recap-gs: installed 0.5 to …` — and that version is recorded
+in `metadata.json` in the directory it names, which is also what the Extensions app shows.
+So "which release am I running" is answerable afterwards, from the machine, without
+consulting a tag:
+
+```sh
+grep version-name ~/.local/share/gnome-shell/extensions/recap@recap-gs.patxi/metadata.json
+```
+
 Then log out and back in, and the indicator appears. It needs
 [`recap`](https://github.com/gortazar/recap) on your `PATH` — that is where the report comes
 from — and says so plainly if recap is not installed.
@@ -174,6 +183,7 @@ The things the suite cannot ask, so a script does instead:
 ```sh
 ci/smoke-test.sh                  # boot a real headless shell and load the extension into it
 ci/verify-terminator.sh           # a resume really lands in the session's own directory
+tools/check-release.sh            # the published release is what this tree describes
 scripts/screenshot.sh             # the same run, with the pictures above taken from it
 scripts/install-local.sh          # install the working tree for a hand-try
 scripts/record-fixtures.sh        # re-record tests/fixtures from the real recap binary
