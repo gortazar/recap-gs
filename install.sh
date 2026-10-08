@@ -66,7 +66,12 @@ if command -v glib-compile-schemas >/dev/null 2>&1 && [ -d "$dest/schemas" ]; th
     glib-compile-schemas "$dest/schemas" 2>/dev/null || true
 fi
 
-echo "recap-gs: installed to $dest"
+# What was actually unpacked, read from the manifest rather than from the tag that was
+# asked for: VERSION=latest resolves server-side, so the tag is not always known here. An
+# older release has no version-name at all, and that must still install rather than fail.
+installed="$(sed -n 's/.*"version-name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+    "$dest/metadata.json" 2>/dev/null | head -1)"
+echo "recap-gs: installed ${installed:-unknown version} to $dest"
 
 if command -v gnome-extensions >/dev/null 2>&1; then
     # Enabling only works once the shell has noticed the new directory, which on Wayland
