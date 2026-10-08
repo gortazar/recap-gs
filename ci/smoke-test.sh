@@ -101,10 +101,26 @@ result="$work/result.json"
 export RECAP_DRIVER_RESULT="$result"
 [ -n "$shots" ] && export RECAP_DRIVER_SHOTS="$shots"
 
+# dbus-run-session only ever looks for /etc/dbus-1/session.conf, and Ubuntu 24.04 and later
+# ship that file at /usr/share/dbus-1/session.conf and leave the /etc path absent. The
+# failure is "Failed to start message bus" before anything of ours runs, which reads like a
+# broken test rather than a missing file in a place nobody names. So find the config and say
+# where it came from, rather than requiring a machine that happens to have the old layout.
+DBUS_RUN_SESSION=(dbus-run-session)
+if [ ! -f /etc/dbus-1/session.conf ]; then
+  for candidate in /usr/share/dbus-1/session.conf /usr/local/share/dbus-1/session.conf; do
+    if [ -f "$candidate" ]; then
+      DBUS_RUN_SESSION=(dbus-run-session --config-file="$candidate")
+      echo "no /etc/dbus-1/session.conf; using $candidate"
+      break
+    fi
+  done
+fi
+
 # dconf is per-user, not per-bus, so these writes land in the throwaway HOME above and
 # nowhere else.
 settings() {
-  dbus-run-session -- sh -c "$*"
+  "${DBUS_RUN_SESSION[@]}" -- sh -c "$*"
 }
 settings "gsettings set org.gnome.shell disable-user-extensions false
           gsettings set org.gnome.shell enabled-extensions \"['$DRIVER', '$UUID']\"
@@ -114,7 +130,7 @@ settings "gsettings set org.gnome.shell disable-user-extensions false
 log="$work/shell.log"
 echo "booting a headless shell (log: $log)"
 set +e
-timeout 180 dbus-run-session -- \
+timeout 180 "${DBUS_RUN_SESSION[@]}" -- \
   gnome-shell --headless --virtual-monitor 1280x1024 --wayland --no-x11 \
   >"$log" 2>&1
 shell_status=$?

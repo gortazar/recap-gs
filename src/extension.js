@@ -98,7 +98,12 @@ class RecapIndicator extends PanelMenu.Button {
         this._applySources();
         this._scheduler = new Scheduler({
             intervalSeconds: this._settings.get_int('refresh-interval'),
-            onTick: () => this._refresh(),
+            // The scheduler calls this and walks away, so a rejection here has nowhere to
+            // go on its own: every tick would fail in silence and the panel would simply
+            // stop changing. The source turns an unreachable recap into a report it renders,
+            // so anything reaching this handler is unexpected — hence warn, not debug.
+            onTick: () => this._refresh().catch(
+                e => console.warn(`recap: a refresh threw: ${e}`)),
             isSuppressed: () => this._suppressed(),
         });
 
@@ -127,7 +132,11 @@ class RecapIndicator extends PanelMenu.Button {
 
         this._sessionModeId = Main.sessionMode.connect('updated', () => this._render());
 
-        this._watchIdle();
+        // Deliberately not awaited — enable() must return promptly — but a rejection still
+        // has to go somewhere. The import inside is guarded; constructing the monitor is
+        // not, and losing idle suppression in silence is the failure worth a log line.
+        this._watchIdle().catch(
+            e => console.debug(`recap: idle monitor unavailable (${e.message}); polling regardless`));
         this._render();
         this._scheduler.start();
 
