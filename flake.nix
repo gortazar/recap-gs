@@ -98,6 +98,8 @@
             pkgs.glib.dev # glib-compile-schemas
             pkgs.eslint
             pkgs.zip
+            pkgs.unzip # tools/check-release.sh reads metadata.json out of the published zip
+            pkgs.curl # ... which it downloads first
             pkgs.jq
             pkgs.git
             packExtension
