@@ -37,6 +37,11 @@ export const TERMINALS = [
     terminal('kgx', dir => [`--working-directory=${dir}`, '--']),
     terminal('ptyxis', dir => [`--working-directory=${dir}`, '--']),
     terminal('gnome-terminal', dir => [`--working-directory=${dir}`, '--']),
+    // -x, not -e: Terminator's -e/--command takes the whole command as one string, while
+    // -x/--execute takes the rest of the line. The generic -e fallback an unlisted terminal
+    // gets would hand it `claude` alone and then try to read `--resume <id>` as Terminator's
+    // own arguments.
+    terminal('terminator', dir => [`--working-directory=${dir}`, '-x']),
     terminal('konsole', dir => ['--workdir', dir, '-e']),
     terminal('xfce4-terminal', dir => [`--working-directory=${dir}`, '-x']),
     terminal('tilix', dir => [`--working-directory=${dir}`, '-e']),

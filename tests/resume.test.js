@@ -77,6 +77,28 @@ suite('choosing a terminal', () => {
         assertEqual(terminal.name, 'xterm');
     });
 
+    test('hands Terminator the command with -x, not -e', () => {
+        // Terminator's -e/--command takes *one* argument — the whole command as a single
+        // string — while -x/--execute takes the rest of the line. So the generic -e fallback
+        // an unlisted terminal gets produces `terminator -e claude --resume <id>`, which is
+        // not the command anybody meant: Terminator reads `claude` as the command and the
+        // rest as its own arguments.
+        const terminal = TERMINALS.find(t => t.name === 'terminator');
+        assert(terminal, 'terminator is not a terminal this extension knows');
+        assertDeepEqual(terminal.argv('/home/me/git/orchestrator', ['claude', '--resume', 'aaaa1111']),
+            ['terminator', '--working-directory=/home/me/git/orchestrator', '-x',
+                'claude', '--resume', 'aaaa1111']);
+    });
+
+    test('a configured terminator resolves to the known row, not the -e fallback', () => {
+        // The bug this entry fixes: typing `terminator` into the preference is the obvious
+        // thing to try, and before this row existed it fell through to `-e`.
+        const terminal = pickTerminal('terminator', name => name === 'terminator');
+        assertEqual(terminal.name, 'terminator');
+        assert(!terminal.argv('/work', ['claude']).includes('-e'),
+            'a configured terminator is still getting the -e fallback');
+    });
+
     test('an unknown but installed terminal is used as given, with -e', () => {
         // Someone's favourite terminal that this list has never heard of still works, as
         // long as it takes -e, which nearly all of them do.

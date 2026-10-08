@@ -18,6 +18,14 @@ suite('secondary sources: terminal windows', () => {
         }
     });
 
+    test('hears Terminator, which is the terminal a resume now opens', () => {
+        // The list above is the one that decides whether a bell counts as an agent asking
+        // for attention. A terminal we launch sessions into and then do not listen to would
+        // make the comment above false in the quietest possible way.
+        assert(isTerminalWindow('Terminator'));
+        assert(isTerminalWindow('terminator'));
+    });
+
     test('matches however the compositor happens to capitalise it', () => {
         // The same terminal reports a different capitalisation under X11 and Wayland, and
         // comparing exactly is how a filter silently matches nothing at all.
